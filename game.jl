@@ -8,45 +8,60 @@ BACKGROUND = colorant"steelblue"
 
 global game_ongoing = true
 
-# define initial state of actors
+NOTE_SPEED::Int8 = 3
+NOTE_INTERVAL::Float16 = 1.0
 
+# define initial state of actors
+"""
 #r = Rect(xpos, ypos, width, height)
 #c = Circle(xpos, ypos, radius)
 #l = Line(xpos1, ypos1, xpos2, ypos2)
-cat = Circle(450, 60, 40)
-score = 0
-button = Rect(450, 550, 150, 50)
-reset_button = Rect(200, 350, 150, 50)
-last_note_time = 0.0
+a = Actor(image.png, xpos, ypos)
+"""
+#reset global variables
 
-NOTE_INTERVAL = 1.0
-#a = Actor(image.png, xpos, ypos)
+function reset()
+    global score, game_ongoing, cursor, button, reset_button, NOTE_SPEED, last_update_time,
+    last_note_time, NOTE_INTERVAL, keys_x, keys_y, keys, notes, positions
+    score = 0
+    game_ongoing = true
+    cursor = Circle(450, 60, 40)
+    button = Rect(450, 550, 150, 50)
+    reset_button = Rect(200, 350, 150, 50)
+    
+    last_update_time = time()
+    last_note_time = 0.0
 
-keys_x = [160, 260, 360, 460] # position of each lane
-keys_y = 550 # y position if hitbox
-keys = [] # hitboxes array
+    keys_x = [160, 260, 360, 460] # position of each lane
+    keys_y = 550 # y position if hitbox
 
-notes = []
-positions = [(160, 0), (260, 0), (360, 0), (460, 0)]
+    keys = [Circle(x, keys_y, 45) for x in keys_x] # hitboxes array
 
-function create_note()
-    xpos, ypos = rand(positions)
-    note = Circle(xpos, ypos, 40)
-    return note
+    notes = []
+    positions = [(160, 0), (260, 0), (360, 0), (460, 0)]
 end
 
+reset()
 
-function on_mouse_down(g::Game)
-    global game_ongoing
+#change game state and attributes of the Actors
+
+function update(g::Game)
     if game_ongoing
-        if collide(cat, button)
-        game_ongoing = false
-        println("game stopped")
+        global last_update_time
+        global last_note_time
+        current_time = time()
+        dt = current_time - last_update_time
+        last_update_time = current_time
+        
+        if current_time - last_note_time > NOTE_INTERVAL
+            push!(notes, create_note())
+            last_note_time = current_time
         end
-    else  
-        if collide(cat, reset_button)
-        println("reset!")
-        reset()
+        for n in notes
+            n.y += NOTE_SPEED * dt * 60 
+            if n.y > HEIGHT
+                deleteat!(notes, findall(x->x==n,notes)) # delete notes when they go off-screen
+            end
         end
     end
 end
@@ -57,10 +72,8 @@ function draw(g::Game)
     if game_ongoing
 
         # draw keys
-        for k in keys_x
-            key = Circle(k, keys_y, 45)
-            push!(keys, key)
-            draw(key)
+        for k in keys
+            draw(k)
         end 
 
         # color keys when pressed
@@ -79,17 +92,12 @@ function draw(g::Game)
         key_text_size = 50
         key_text_color = Int[0, 0, 0, 255]
         key_text = ["S", "D", "J", "K"]
+
         for i in eachindex(key_text)
             k = key_text[i]
             t = TextActor("$k", "sourgummy"; font_size = key_text_size, color = key_text_color)
             t.pos = (keys_x[i] - 15, key_text_y)
             draw(t)
-        end
-
-        global last_note_time
-        if time() - last_note_time > NOTE_INTERVAL            
-            push!(notes, create_note())
-            last_note_time = time()
         end
 
         for n in notes
@@ -109,7 +117,7 @@ function draw(g::Game)
         draw(score_text)
 
         # cursor position
-        txt = TextActor("x = $(cat.x) | y = $(cat.y)", "sourgummy";
+        txt = TextActor("x = $(cursor.x) | y = $(cursor.y)", "sourgummy";
             font_size = 36, color = Int[0, 0, 0, 255]
         )
         txt.pos = (10, 10)
@@ -118,7 +126,7 @@ function draw(g::Game)
     else
         # Game over screen
 
-        draw(cat, colorant"blue", fill = true)
+        draw(cursor, colorant"blue", fill = true)
 
         game_over = TextActor("Game Over", "sourgummy"; font_size=50, color=Int[0, 0, 0, 255])
         game_over.pos = (150, 180)
@@ -128,7 +136,6 @@ function draw(g::Game)
         game_over_score.pos = (150, 250)
         draw(game_over_score)
 
-        reset_button = Rect(200, 350, 150, 50)
         reset_button_text = TextActor("Reset", "sourgummy"; font_size=40, color=Int[0, 0, 0, 255])
         reset_button_text.pos = (220, 350)
         draw(reset_button, colorant"red", fill= true)
@@ -137,61 +144,59 @@ function draw(g::Game)
 
 end
 
-# define mouse input
-
-function on_mouse_move(g::Game, pos)
-    cat.x = pos[1]
-    cat.y = pos[2]
-end
-
 # define keyboard inputs
 
 function on_key_down(g::Game, k)
-    if game_ongoing
-        println("key down!")
-        global score
-        for note in notes
+    if !game_ongoing
+        return
+    end
+    global score
 
-            if collide(note, keys[1]) && k == Keys.S
-                score += 1
-                popfirst!(notes)
-            elseif collide(note, keys[2]) && k == Keys.D
-                score += 1
-                popfirst!(notes)
-            elseif collide(note, keys[3]) && k == Keys.J
-                score += 1
-                popfirst!(notes)
-            elseif collide(note, keys[4]) && k == Keys.K
-                score += 1
-                popfirst!(notes)
-            end
+    for i in eachindex(notes)
+        if collide(notes[i], keys[1]) && k == Keys.S
+            score += 1
+            deleteat!(notes, i)
+            break
+        elseif collide(notes[i], keys[2]) && k == Keys.D
+            score += 1
+            deleteat!(notes, i)
+            break
+        elseif collide(notes[i], keys[3]) && k == Keys.J
+            score += 1
+            deleteat!(notes, i)
+            break
+        elseif collide(notes[i], keys[4]) && k == Keys.K
+            score += 1
+            deleteat!(notes, i)
+            break
         end
     end
 end
 
-#change game state and attributes of the Actors
+# define mouse input
 
-function update(g::Game)
+function on_mouse_move(g::Game, pos)
+    cursor.x = pos[1]
+    cursor.y = pos[2]
+end
+
+function on_mouse_down(g::Game)
+    global game_ongoing
     if game_ongoing
-        for n in notes
-            n.y += NOTE_SPEED # move notes
-            if n.y > HEIGHT
-                deleteat!(notes, findall(x->x==n,notes)) # delete notes when they go off-screen
-            end
+        if collide(cursor, button)
+        game_ongoing = false
+        println("game stopped")
+        end
+    else  
+        if collide(cursor, reset_button)
+        println("reset!")
+        reset()
         end
     end
 end
 
-function reset()
-    #reset global variables
-    println("resetting!")
-    global score, game_ongoing, cat, button, reset_button, NOTE_SPEED
-    score = 0
-    game_ongoing = true
-    cat = Circle(450, 60, 40)
-    button = Rect(450, 550, 150, 50)
-    reset_button = Rect(200, 350, 150, 50)
-    NOTE_SPEED = 3
+function create_note()
+    xpos, ypos = rand(positions)
+    note = Circle(xpos, ypos, 40)
+    return note
 end
-
-reset()
