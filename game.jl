@@ -1,17 +1,21 @@
 # initialize screen
 
-WIDTH = 600
-HEIGHT = 600
-BACKGROUND = colorant"steelblue"
+const WIDTH = 600
+const HEIGHT = 600
+const BACKGROUND = colorant"steelblue"
 
 # game state
 
 global game_ongoing = true
 
-NOTE_SPEED::Int8 = 3
-NOTE_INTERVAL::Float16 = 1.0
-
 # define initial state of actors
+
+const NOTE_SPEED::Int8 = 3
+const NOTE_INTERVAL::Float16 = 1.0
+const music = "16_bit_space.ogg"
+const hit = "electronicbip3.wav"
+
+
 """
 #r = Rect(xpos, ypos, width, height)
 #c = Circle(xpos, ypos, radius)
@@ -21,10 +25,12 @@ a = Actor(image.png, xpos, ypos)
 #reset global variables
 
 function reset()
-    global score, game_ongoing, cursor, button, reset_button, NOTE_SPEED, last_update_time,
-    last_note_time, NOTE_INTERVAL, keys_x, keys_y, keys, notes, positions
-    score = 0
+    global score, game_ongoing, cursor, button, reset_button, last_update_time,
+    last_note_time, keys_x, keys_y, keys, notes, positions, POINTS
+
     game_ongoing = true
+    score = 0
+    POINTS = 100
     cursor = Circle(450, 60, 40)
     button = Rect(450, 550, 150, 50)
     reset_button = Rect(200, 350, 150, 50)
@@ -151,22 +157,25 @@ function on_key_down(g::Game, k)
         return
     end
     global score
-
     for i in eachindex(notes)
         if collide(notes[i], keys[1]) && k == Keys.S
-            score += 1
+            score += POINTS
+            play_sound(hit)
             deleteat!(notes, i)
             break
         elseif collide(notes[i], keys[2]) && k == Keys.D
-            score += 1
+            score += POINTS
+            play_sound(hit)
             deleteat!(notes, i)
             break
         elseif collide(notes[i], keys[3]) && k == Keys.J
-            score += 1
+            score += POINTS
+            play_sound(hit)
             deleteat!(notes, i)
             break
         elseif collide(notes[i], keys[4]) && k == Keys.K
-            score += 1
+            score += POINTS
+            play_sound(hit)
             deleteat!(notes, i)
             break
         end
