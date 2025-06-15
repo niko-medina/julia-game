@@ -2,7 +2,7 @@
 
 const WIDTH = 600
 const HEIGHT = 600
-const BACKGROUND = colorant"steelblue"
+const BACKGROUND = colorant"black"
 
 # game state
 
@@ -10,11 +10,12 @@ global game_ongoing = true
 
 # define initial state of actors
 
-const NOTE_SPEED::Int8 = 3
-const NOTE_INTERVAL::Float16 = 1.0
+const NOTE_SPEED::Int8 = 7
+const NOTE_INTERVAL::Float16 = 0.2
 const music = "16_bit_space.ogg"
 const hit = "electronicbip3.wav"
-
+const miss = "orchestrashot2.wav"
+const WHITE = Int[255, 255, 255, 255]
 
 """
 #r = Rect(xpos, ypos, width, height)
@@ -30,7 +31,7 @@ function reset()
 
     game_ongoing = true
     score = 0
-    POINTS = 100
+    POINTS = 10
     cursor = Circle(450, 60, 40)
     button = Rect(450, 550, 150, 50)
     reset_button = Rect(200, 350, 150, 50)
@@ -48,11 +49,12 @@ function reset()
 end
 
 reset()
-
+play_sound(music)
 #change game state and attributes of the Actors
 
 function update(g::Game)
     if game_ongoing
+        
         global last_update_time
         global last_note_time
         current_time = time()
@@ -67,6 +69,7 @@ function update(g::Game)
             n.y += NOTE_SPEED * dt * 60 
             if n.y > HEIGHT
                 deleteat!(notes, findall(x->x==n,notes)) # delete notes when they go off-screen
+                play_sound(miss)
             end
         end
     end
@@ -79,7 +82,7 @@ function draw(g::Game)
 
         # draw keys
         for k in keys
-            draw(k)
+            draw(k, colorant"red")
         end 
 
         # color keys when pressed
@@ -96,7 +99,7 @@ function draw(g::Game)
         # keys labels
         key_text_y = keys_y - 30
         key_text_size = 50
-        key_text_color = Int[0, 0, 0, 255]
+        key_text_color = WHITE
         key_text = ["S", "D", "J", "K"]
 
         for i in eachindex(key_text)
@@ -107,24 +110,24 @@ function draw(g::Game)
         end
 
         for n in notes
-            draw(n, colorant"green", fill="true")
+            draw(n, colorant"green", fill=true)
         end
         
         draw(button, colorant"yellow", fill= true)
 
         #button text
-        stop_text = TextActor("Stop", "sourgummy";font_size = 36, color = Int[0, 0, 0, 255])
+        stop_text = TextActor("Stop", "sourgummy";font_size = 36, color = WHITE)
         stop_text.pos = (480, 550)
         draw(stop_text)
 
         # score text
-        score_text = TextActor("Score: $(score)", "sourgummy";font_size = 36, color = Int[0, 0, 0, 255]) 
+        score_text = TextActor("Score: $(score)", "sourgummy";font_size = 36, color = WHITE) 
         score_text.pos = (400, 10)
         draw(score_text)
 
         # cursor position
         txt = TextActor("x = $(cursor.x) | y = $(cursor.y)", "sourgummy";
-            font_size = 36, color = Int[0, 0, 0, 255]
+            font_size = 36, color = WHITE
         )
         txt.pos = (10, 10)
         draw(txt)
@@ -134,15 +137,15 @@ function draw(g::Game)
 
         draw(cursor, colorant"blue", fill = true)
 
-        game_over = TextActor("Game Over", "sourgummy"; font_size=50, color=Int[0, 0, 0, 255])
+        game_over = TextActor("Game Over", "sourgummy"; font_size=50, color=WHITE)
         game_over.pos = (150, 180)
         draw(game_over)
 
-        game_over_score = TextActor("Your score: $score", "sourgummy"; font_size=50, color=Int[0, 0, 0, 255])
+        game_over_score = TextActor("Your score: $score", "sourgummy"; font_size=50, color=WHITE)
         game_over_score.pos = (150, 250)
         draw(game_over_score)
 
-        reset_button_text = TextActor("Reset", "sourgummy"; font_size=40, color=Int[0, 0, 0, 255])
+        reset_button_text = TextActor("Reset", "sourgummy"; font_size=40, color=WHITE)
         reset_button_text.pos = (220, 350)
         draw(reset_button, colorant"red", fill= true)
         draw(reset_button_text)
