@@ -17,14 +17,8 @@ const hit = "electronicbip3.wav"
 const miss = "orchestrashot2.wav"
 const WHITE = Int[255, 255, 255, 255]
 const BLACK = Int[0,0,0,255]
-const song_duration = 30.0
+const song_duration = 55.0
 
-"""
-#r = Rect(xpos, ypos, width, height)
-#c = Circle(xpos, ypos, radius)
-#l = Line(xpos1, ypos1, xpos2, ypos2)
-a = Actor(image.png, xpos, ypos)
-"""
 #reset global variables
 
 function reset()
@@ -33,9 +27,8 @@ function reset()
 
     game_ongoing = true
     score = 0
-    POINTS = 10
+    POINTS = 1
     combo = 0
-    #cursor = Circle(450, 60, 30)
     cursor = Actor("tiny_ship5.png")
     button = Rect(10, 10, 110, 50)
     reset_button = Rect(200, 350, 200, 80)
@@ -47,8 +40,6 @@ function reset()
     keys_x = [115, 215, 315, 415] # position of each lane
     keys_y = 500 # y position of hitbox
 
-    #keys = [Circle(x, keys_y, 45) for x in keys_x] # hitboxes array
-
     keys = [begin
     a = Actor("planet.png")
     a.x = x
@@ -58,10 +49,12 @@ function reset()
 
     notes = []
     positions = [(160, 0), (260, 0), (360, 0), (460, 0)]
+
+    play_music(music, 0)
 end
 
 reset()
-play_sound(music)
+#play_music(music)
 #change game state and attributes of the Actors
 
 function update(g::Game)
@@ -82,7 +75,6 @@ function update(g::Game)
             n.y += NOTE_SPEED * dt * 60 
             if n.y > HEIGHT
                 deleteat!(notes, findall(x->x==n,notes)) # delete notes when they go off-screen
-                play_sound(miss)
                 combo = 0
             end
         end
@@ -99,19 +91,11 @@ end
 # draw actors
 
 function draw(g::Game)
-    # cursor position
-    """
-    txt = TextActor("x = (cursor.x) | y = (cursor.y)", "sourgummy";
-        font_size = 36, color = WHITE
-    )
-    txt.pos = (10, 10)
-    draw(txt)
-    """
+
     if game_ongoing
 
         # draw keys
         for k in keys
-            #draw(k, colorant"red")
             draw(k)
         end 
 
@@ -145,7 +129,7 @@ function draw(g::Game)
             draw(n, colorant"cyan", fill=true)
         end
         
-        draw(button, colorant"yellow", fill= true)
+        draw(button, colorant"skyblue3", fill= true)
 
         #button text
         stop_text = TextActor("Stop", "gravitybold8";font_size = 24, color = BLACK)
@@ -162,10 +146,17 @@ function draw(g::Game)
         combo_text.pos = (250, 50)
         draw(combo_text)
 
+        progress = clamp(1.0 - song_timer / song_duration, 0.0, 1.0) # to keep the value between 0 and 1
+        bar_h = floor(Int, HEIGHT * progress )
+        bar_w = 10
+        bar_x = 10
+        bar_y = HEIGHT - bar_h
+        bar = Rect(bar_x, bar_y, bar_w, bar_h)
+        draw(bar, colorant"grey28", fill = true)
+
     else
         # Game over screen
 
-        #draw(cursor, colorant"blue", fill = true)
         draw(cursor)
 
         game_over = TextActor("Game Over", "gravitybold8"; font_size=48, color=WHITE)
@@ -178,7 +169,7 @@ function draw(g::Game)
 
         reset_button_text = TextActor("Reset", "gravitybold8"; font_size=40, color=WHITE)
         reset_button_text.pos = (215, 370)
-        draw(reset_button, colorant"red", fill= true)
+        draw(reset_button, colorant"skyblue4", fill= true)
         draw(reset_button_text)
     end
 
